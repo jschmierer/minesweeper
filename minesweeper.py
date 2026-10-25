@@ -1,4 +1,3 @@
-
 import random
 import turtle
 import time
@@ -36,8 +35,7 @@ else:
     mines = 100
 
 #turtle setup
-# Very narrow boards need a taller HUD so the labels do not overlap.
-HUD_ROWS = 5 if c * TILESIZE < 600 else 2
+HUD_ROWS = 2
 WINDOW_WIDTH = c * TILESIZE
 WINDOW_HEIGHT = (r + HUD_ROWS) * TILESIZE
 
@@ -53,33 +51,33 @@ t.hideturtle()
 
 #on screen board creation
 def drawBevelSquare(TILESIZE, t):
-  squarescale = 20 / 28
-  half = TILESIZE / 2
-  x = t.xcor()
-  y = t.ycor()
-  t.color("#ffffff")
-  t.goto(x - half, y + half)
-  t.begin_fill()
-  t.goto(x - half, y - half)
-  t.goto(x + half, y - half)
-  t.goto(x - half, y + half)
-  t.end_fill()
-  t.color("#7b7b7b")
-  t.begin_fill()
-  t.goto(x + half, y + half)
-  t.goto(x + half, y - half)
-  t.goto(x - half, y + half)
-  t.end_fill()
-  leg = half * squarescale
-  t.color("#bdbdbd")
-  t.begin_fill()
-  t.goto(x - leg, y + leg)
-  t.goto(x + leg, y + leg)
-  t.goto(x + leg, y - leg)
-  t.goto(x - leg, y - leg)
-  t.goto(x - leg, y + leg)
-  t.end_fill()
-  t.goto(x, y)
+    squarescale = 20 / 28
+    half = TILESIZE / 2
+    x = t.xcor()
+    y = t.ycor()
+    t.color("#ffffff")
+    t.goto(x - half, y + half)
+    t.begin_fill()
+    t.goto(x - half, y - half)
+    t.goto(x + half, y - half)
+    t.goto(x - half, y + half)
+    t.end_fill()
+    t.color("#7b7b7b")
+    t.begin_fill()
+    t.goto(x + half, y + half)
+    t.goto(x + half, y - half)
+    t.goto(x - half, y + half)
+    t.end_fill()
+    leg = half * squarescale
+    t.color("#bdbdbd")
+    t.begin_fill()
+    t.goto(x - leg, y + leg)
+    t.goto(x + leg, y + leg)
+    t.goto(x + leg, y - leg)
+    t.goto(x - leg, y - leg)
+    t.goto(x - leg, y + leg)
+    t.end_fill()
+    t.goto(x, y)
 
 bg = turtle.Turtle()
 bg.hideturtle()
@@ -92,10 +90,10 @@ tilet.penup()
 tilet.hideturtle()
 tilet.goto(TILESIZE / 2, TILESIZE * (HUD_ROWS + 0.5))
 for i in range(r):
-  for j in range(c):
-    drawBevelSquare(TILESIZE, tilet)
-    tilet.goto(tilet.xcor() + TILESIZE, tilet.ycor())
-  tilet.goto(TILESIZE / 2, tilet.ycor() + TILESIZE)
+    for j in range(c):
+        drawBevelSquare(TILESIZE, tilet)
+        tilet.goto(tilet.xcor() + TILESIZE, tilet.ycor())
+    tilet.goto(TILESIZE / 2, tilet.ycor() + TILESIZE)
 
 screen.update()
 
@@ -125,44 +123,25 @@ def drawHUD():
     font_size = max(7, min(13, int(TILESIZE * 0.32)))
     font = ("Arial", font_size, "bold")
 
-    if HUD_ROWS == 5:
-        # On narrow boards, use separate lines to avoid overlapping labels.
-        hud.goto(10, TILESIZE * 0.5)
-        hud.write(f"Mines: {mines}", align="left", font=font)
+    # Two-row HUD layout
+    # Top row: Mines (left), Click to reset (center), Time (right)
+    hud.goto(10, TILESIZE * 0.5)
+    hud.write(f"Mines: {mines}", align="left", font=font)
 
-        hud.goto(10, TILESIZE * 1.5)
-        hud.write(f"Flags: {flagcount}", align="left", font=font)
+    hud.goto(c * TILESIZE / 2, TILESIZE * 0.5)
+    hud.color("blue")
+    hud.write("Click to reset", align="center", font=font)
 
-        hud.goto(c * TILESIZE / 2, TILESIZE * 2.5)
-        hud.color("blue")
-        hud.write("Click to reset", align="center", font=font)
+    hud.goto(c * TILESIZE - 10, TILESIZE * 0.5)
+    hud.color("black")
+    hud.write(f"Time: {formatTime(getElapsedTime())}", align="right", font=font)
 
-        hud.goto(10, TILESIZE * 3.5)
-        hud.color("black")
-        hud.write(f"Time: {formatTime(getElapsedTime())}",
-                  align="left", font=font)
+    # Bottom row: Flags (left), Lives left (right)
+    hud.goto(10, TILESIZE * 1.5)
+    hud.write(f"Flags: {flagcount}", align="left", font=font)
 
-        hud.goto(10, TILESIZE * 4.5)
-        hud.write(f"Lives left: {lives}", align="left", font=font)
-    else:
-        # Two-row HUD for wider boards.
-        hud.goto(10, TILESIZE * 0.5)
-        hud.write(f"Mines: {mines}", align="left", font=font)
-
-        hud.goto(10, TILESIZE * 1.5)
-        hud.write(f"Flags: {flagcount}", align="left", font=font)
-
-        hud.goto(c * TILESIZE / 2, TILESIZE * 0.5)
-        hud.color("blue")
-        hud.write("Click to reset", align="center", font=font)
-
-        hud.goto(c * TILESIZE - 10, TILESIZE * 0.5)
-        hud.color("black")
-        hud.write(f"Time: {formatTime(getElapsedTime())}",
-                  align="right", font=font)
-
-        hud.goto(c * TILESIZE - 10, TILESIZE * 1.5)
-        hud.write(f"Lives left: {lives}", align="right", font=font)
+    hud.goto(c * TILESIZE - 10, TILESIZE * 1.5)
+    hud.write(f"Lives left: {lives}", align="right", font=font)
 
     screen.update()
 
@@ -225,11 +204,11 @@ def makeBoard(blanki, blankj):
 
 # flag:
 flagbottomshapecoords = ((-4, -5), (-4, -3), (-2, -3), (-2, -2), (0, -2), (0, 0),
-                      (1, 0), (1, -3), (2, -2), (2, -3), (4, -3), (4, -5),
-                      (-4, -5))
+                     (1, 0), (1, -3), (2, -2), (2, -3), (4, -3), (4, -5),
+                     (-4, -5))
 flagtopshapecoords = ((1, 0), (-1, 0), (-1, 1), (-3, 1), (-3, 2), (-4, 2),
-                         (-4, 3), (-3, 3), (-3, 4), (-1, 4), (-1, 5), (1, 5),
-                         (1, 0))
+                        (-4, 3), (-3, 3), (-3, 4), (-1, 4), (-1, 5), (1, 5),
+                        (1, 0))
 screen.register_shape("flagbottom", flagbottomshapecoords)
 screen.register_shape("flagtop", flagtopshapecoords)
 
@@ -330,7 +309,7 @@ def writeTileValue(i, j):
     t.setheading(-90)
     if tile == "M":
         drawMine()
-    elif tile <= 6: # eventually remove conditional when all shapes set
+    elif tile <= 6:
         t.shape(str(tile))
         if tile == 1:
             t.color("#0101ff")
