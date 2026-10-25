@@ -1,8 +1,13 @@
+
 import random
 import turtle
 
-#initialize board with r rows and c columns
 mode = "med"
+tilesize = 40
+lives = 2
+game_over = False
+
+#initialize board with r rows and c columns
 if mode == "easy":
     r = 10
     c = 10
@@ -17,7 +22,6 @@ else:
     mines = 100
 
 #turtle setup
-tilesize = 60
 turtle.setup(c * tilesize, r * tilesize)
 turtle.setworldcoordinates(0, r * tilesize, c * tilesize, 0)
 t = turtle.Turtle()
@@ -72,7 +76,7 @@ for i in range(r):
     drawBevelSquare(tilesize, tilet)
     tilet.goto(tilet.xcor() + tilesize, tilet.ycor())
   tilet.goto(tilesize / 2, tilet.ycor() + tilesize)
-    
+
 screen.update()
 
 # make the board logic
@@ -149,6 +153,8 @@ def findTileFromPos(x, y):
 
 flags = []
 def drawFlag(x, y):
+    if game_over:
+        return
     spot = findTileFromPos(x, y)
     y = spot[0] * tilesize + tilesize / 2
     x = spot[1] * tilesize + tilesize / 2
@@ -255,12 +261,12 @@ def revealNeighboringBlanks(i, j):
     if j + 1 < c:
         revealTile(i, j + 1)
     if i + 1 < r and j - 1 >= 0:
-        revealTile(i +1, j - 1)
+        revealTile(i + 1, j - 1)
     if i + 1 < r:
-        revealTile(i +1, j)
+        revealTile(i + 1, j)
     if i + 1 < r and j + 1 < c:
         revealTile(i + 1, j + 1)
-    
+
 revealed = []
 def revealTile(i, j):
     if (i, j) in flags or (i, j) in revealed:
@@ -285,17 +291,75 @@ def revealTile(i, j):
 # making board and clicking logic
 board = None
 
+# Death message
+deathtext = turtle.Turtle()
+deathtext.hideturtle()
+deathtext.penup()
+deathtext.color("red")
+
+def resetGame():
+    global board, lives, game_over, flags, revealed
+
+    t.clear()
+    tilet.clear()
+    bg.clear()
+    deathtext.clear()
+
+    flags = []
+    revealed = []
+    board = None
+    lives = 1
+    game_over = False
+
+    # Redraw the background and tiles
+    bg.penup()
+    bg.goto(c * tilesize / 2, r * tilesize / 2)
+    drawBevelSquare(tilesize * 20 + 10, bg)
+
+    tilet.penup()
+    tilet.goto(tilesize / 2, tilesize / 2)
+    for i in range(r):
+        for j in range(c):
+            drawBevelSquare(tilesize, tilet)
+            tilet.goto(tilet.xcor() + tilesize, tilet.ycor())
+        tilet.goto(tilesize / 2, tilet.ycor() + tilesize)
+
+    screen.update()
+
 def onClick(x, y):
-    global board
+    global board, lives, game_over
+
+    if game_over:
+        return
+
     tilei, tilej = findTileFromPos(x, y)
+
+    if not (0 <= tilei < r and 0 <= tilej < c):
+        return
+
     if board == None:
         board = makeBoard(tilei, tilej)
         for i in range(r):
             for j in range(c):
                 print(board[i][j], end=" ")
             print()
+
+    if (tilei, tilej) in flags or (tilei, tilej) in revealed:
+        return
+
+    if board[tilei][tilej] == "M":
+        lives -= 1
+
     revealTile(tilei, tilej)
-        
+
+    if lives == 0:
+        game_over = True
+        deathtext.goto(c * tilesize / 2, r * tilesize / 2)
+        deathtext.write("You Died! :(", align="center",
+                        font=("Arial", 36, "bold"))
+        screen.update()
+        screen.ontimer(resetGame, 3000)
+
 screen.onscreenclick(onClick)
 
 screen.mainloop()
