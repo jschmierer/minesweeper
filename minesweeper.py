@@ -4,7 +4,7 @@ import turtle
 import time
 
 # customizable options!
-MODE = "med"
+MODE = "hard"
 TILESIZE = 40
 LIVES = 2
 
@@ -36,9 +36,14 @@ else:
     mines = 100
 
 #turtle setup
-turtle.setup(c * TILESIZE, (r + 1) * TILESIZE)
+# Very narrow boards need a taller HUD so the labels do not overlap.
+HUD_ROWS = 5 if c * TILESIZE < 600 else 2
+WINDOW_WIDTH = c * TILESIZE
+WINDOW_HEIGHT = (r + HUD_ROWS) * TILESIZE
+
+turtle.setup(WINDOW_WIDTH, WINDOW_HEIGHT)
 screen = turtle.Screen()
-screen.setworldcoordinates(0, (r + 1) * TILESIZE, c * TILESIZE, 0)
+screen.setworldcoordinates(0, WINDOW_HEIGHT, WINDOW_WIDTH, 0)
 screen.tracer(0, 0)
 
 t = turtle.Turtle()
@@ -79,13 +84,13 @@ def drawBevelSquare(TILESIZE, t):
 bg = turtle.Turtle()
 bg.hideturtle()
 bg.penup()
-bg.goto(c * TILESIZE / 2, (r + 2) * TILESIZE / 2)
+bg.goto(c * TILESIZE / 2, (HUD_ROWS + r / 2) * TILESIZE)
 drawBevelSquare(TILESIZE * 20 + 10, bg)
 
 tilet = turtle.Turtle()
 tilet.penup()
 tilet.hideturtle()
-tilet.goto(TILESIZE / 2, TILESIZE * 1.5)
+tilet.goto(TILESIZE / 2, TILESIZE * (HUD_ROWS + 0.5))
 for i in range(r):
   for j in range(c):
     drawBevelSquare(TILESIZE, tilet)
@@ -114,27 +119,50 @@ def getElapsedTime():
 
 def drawHUD():
     hud.clear()
-    y = TILESIZE / 2
-
-    hud.goto(10, y)
     hud.color("black")
-    hud.write(f"Mines: {mines}\tFlags: {flagcount}",
-              align="left", font=("Arial", 13, "bold"))
 
-    hud.goto(c * TILESIZE / 2, y)
-    hud.color("blue")
-    hud.write("Click to reset", align="center",
-              font=("Arial", 13, "bold"))
+    # Scale the text with the tiles, while keeping it readable.
+    font_size = max(7, min(13, int(TILESIZE * 0.32)))
+    font = ("Arial", font_size, "bold")
 
-    hud.goto(c * TILESIZE * 0.65, y)
-    hud.color("black")
-    hud.write(f"Time: {formatTime(getElapsedTime())}",
-              align="left", font=("Arial", 13, "bold"))
+    if HUD_ROWS == 5:
+        # On narrow boards, use separate lines to avoid overlapping labels.
+        hud.goto(10, TILESIZE * 0.5)
+        hud.write(f"Mines: {mines}", align="left", font=font)
 
-    hud.goto(c * TILESIZE - 10, y)
-    hud.color("black")
-    hud.write(f"Lives left: {lives}", align="right",
-              font=("Arial", 13, "bold"))
+        hud.goto(10, TILESIZE * 1.5)
+        hud.write(f"Flags: {flagcount}", align="left", font=font)
+
+        hud.goto(c * TILESIZE / 2, TILESIZE * 2.5)
+        hud.color("blue")
+        hud.write("Click to reset", align="center", font=font)
+
+        hud.goto(10, TILESIZE * 3.5)
+        hud.color("black")
+        hud.write(f"Time: {formatTime(getElapsedTime())}",
+                  align="left", font=font)
+
+        hud.goto(10, TILESIZE * 4.5)
+        hud.write(f"Lives left: {lives}", align="left", font=font)
+    else:
+        # Two-row HUD for wider boards.
+        hud.goto(10, TILESIZE * 0.5)
+        hud.write(f"Mines: {mines}", align="left", font=font)
+
+        hud.goto(10, TILESIZE * 1.5)
+        hud.write(f"Flags: {flagcount}", align="left", font=font)
+
+        hud.goto(c * TILESIZE / 2, TILESIZE * 0.5)
+        hud.color("blue")
+        hud.write("Click to reset", align="center", font=font)
+
+        hud.goto(c * TILESIZE - 10, TILESIZE * 0.5)
+        hud.color("black")
+        hud.write(f"Time: {formatTime(getElapsedTime())}",
+                  align="right", font=font)
+
+        hud.goto(c * TILESIZE - 10, TILESIZE * 1.5)
+        hud.write(f"Lives left: {lives}", align="right", font=font)
 
     screen.update()
 
@@ -206,7 +234,7 @@ screen.register_shape("flagbottom", flagbottomshapecoords)
 screen.register_shape("flagtop", flagtopshapecoords)
 
 def findTileFromPos(x, y):
-    i = int(y / TILESIZE) - 1
+    i = int(y / TILESIZE) - HUD_ROWS
     j = int(x / TILESIZE)
     return (i, j)
 
@@ -218,7 +246,7 @@ def drawFlag(x, y):
     if lost or won:
         return
 
-    if y < TILESIZE:
+    if y < HUD_ROWS * TILESIZE:
         return
 
     spot = findTileFromPos(x, y)
@@ -227,7 +255,7 @@ def drawFlag(x, y):
         return
 
     tilex = spot[1] * TILESIZE + TILESIZE / 2
-    tiley = (spot[0] + 1) * TILESIZE + TILESIZE / 2
+    tiley = (spot[0] + HUD_ROWS) * TILESIZE + TILESIZE / 2
 
     if spot in revealed:
         return
@@ -353,7 +381,7 @@ def revealTile(i, j):
     t.shapesize(TILESIZE / 21)
     t.color("#7b7b7b", "#bdbdbd")
     x = j * TILESIZE + TILESIZE / 2
-    y = (i + 1) * TILESIZE + TILESIZE / 2
+    y = (i + HUD_ROWS) * TILESIZE + TILESIZE / 2
     t.goto(x, y)
     t.stamp()
     t.shapesize(TILESIZE / 20)
@@ -383,12 +411,12 @@ def checkWin():
         won = True
         elapsed_time = getElapsedTime()
         message.clear()
-        message.goto(c * TILESIZE / 2, (r + 1) * TILESIZE / 2)
+        message.goto(c * TILESIZE / 2, (HUD_ROWS + r / 2) * TILESIZE)
         message.color("green")
         message.write(
             f"You Won! :D\nTime: {formatTime(elapsed_time)}",
             align="center",
-            font=("Arial", 30, "bold")
+            font=("Arial", max(12, min(30, int(TILESIZE * 0.75))), "bold")
         )
         drawHUD()
 
@@ -426,11 +454,11 @@ def resetGame():
 
     # Redraw the background and tiles
     bg.penup()
-    bg.goto(c * TILESIZE / 2, (r + 2) * TILESIZE / 2)
+    bg.goto(c * TILESIZE / 2, (HUD_ROWS + r / 2) * TILESIZE)
     drawBevelSquare(TILESIZE * 20 + 10, bg)
 
     tilet.penup()
-    tilet.goto(TILESIZE / 2, TILESIZE * 1.5)
+    tilet.goto(TILESIZE / 2, TILESIZE * (HUD_ROWS + 0.5))
     for i in range(r):
         for j in range(c):
             drawBevelSquare(TILESIZE, tilet)
@@ -444,7 +472,7 @@ def onClick(x, y):
     global board, lives, lost, won, start_time, elapsed_time
 
     # Clicking the top row resets the game
-    if y < TILESIZE:
+    if y < HUD_ROWS * TILESIZE:
         resetGame()
         return
 
@@ -479,10 +507,10 @@ def onClick(x, y):
     if lives == 0:
         lost = True
         elapsed_time = getElapsedTime()
-        message.goto(c * TILESIZE / 2, (r + 1) * TILESIZE / 2)
+        message.goto(c * TILESIZE / 2, (HUD_ROWS + r / 2) * TILESIZE)
         message.color("red")
         message.write("You Died! :(", align="center",
-                      font=("Arial", 36, "bold"))
+                      font=("Arial", max(12, min(36, int(TILESIZE * 0.9))), "bold"))
         drawHUD()
         screen.ontimer(resetGame, 3000)
         return
