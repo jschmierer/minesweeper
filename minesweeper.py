@@ -4,7 +4,7 @@ import turtle
 import time
 
 # customizable options!
-MODE = "hard"
+MODE = "easy"
 TILESIZE = 40
 LIVES = 2
 
