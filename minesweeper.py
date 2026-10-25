@@ -1,18 +1,32 @@
 
 import random
 import turtle
+import time
 
-mode = "med"
-tilesize = 40
-lives = 2
-game_over = False
+# customizable options!
+MODE = "med"
+TILESIZE = 40
+LIVES = 2
+
+# other setup
+lives = LIVES
+lost = False
+won = False
+flagcount = 0
+start_time = None
+elapsed_time = 0
+timer_generation = 0
 
 #initialize board with r rows and c columns
-if mode == "easy":
+if MODE == "super easy":
+    r = 5
+    c = 5
+    mines = 5
+elif MODE == "easy":
     r = 10
     c = 10
     mines = 20
-elif mode == "med":
+elif MODE == "med":
     r = 15
     c = 15
     mines = 45
@@ -22,19 +36,20 @@ else:
     mines = 100
 
 #turtle setup
-turtle.setup(c * tilesize, r * tilesize)
-turtle.setworldcoordinates(0, r * tilesize, c * tilesize, 0)
-t = turtle.Turtle()
+turtle.setup(c * TILESIZE, (r + 1) * TILESIZE)
 screen = turtle.Screen()
+screen.setworldcoordinates(0, (r + 1) * TILESIZE, c * TILESIZE, 0)
 screen.tracer(0, 0)
+
+t = turtle.Turtle()
 t.penup()
-t.shapesize(tilesize / 20)
+t.shapesize(TILESIZE / 20)
 t.hideturtle()
 
 #on screen board creation
-def drawBevelSquare(tilesize, t):
+def drawBevelSquare(TILESIZE, t):
   squarescale = 20 / 28
-  half = tilesize / 2
+  half = TILESIZE / 2
   x = t.xcor()
   y = t.ycor()
   t.color("#ffffff")
@@ -63,21 +78,65 @@ def drawBevelSquare(tilesize, t):
 
 bg = turtle.Turtle()
 bg.hideturtle()
-bg.goto(c * tilesize / 2, r * tilesize / 2)
 bg.penup()
-drawBevelSquare(tilesize * 20 + 10, bg)
+bg.goto(c * TILESIZE / 2, (r + 2) * TILESIZE / 2)
+drawBevelSquare(TILESIZE * 20 + 10, bg)
 
 tilet = turtle.Turtle()
 tilet.penup()
 tilet.hideturtle()
-tilet.goto(tilesize / 2, tilet.ycor() + tilesize / 2)
+tilet.goto(TILESIZE / 2, TILESIZE * 1.5)
 for i in range(r):
   for j in range(c):
-    drawBevelSquare(tilesize, tilet)
-    tilet.goto(tilet.xcor() + tilesize, tilet.ycor())
-  tilet.goto(tilesize / 2, tilet.ycor() + tilesize)
+    drawBevelSquare(TILESIZE, tilet)
+    tilet.goto(tilet.xcor() + TILESIZE, tilet.ycor())
+  tilet.goto(TILESIZE / 2, tilet.ycor() + TILESIZE)
 
 screen.update()
+
+# HUD
+hud = turtle.Turtle()
+hud.hideturtle()
+hud.penup()
+hud.speed(0)
+
+def formatTime(seconds):
+    minutes = int(seconds) // 60
+    seconds = int(seconds) % 60
+    return f"{minutes:02}:{seconds:02}"
+
+def getElapsedTime():
+    if start_time is None:
+        return elapsed_time
+    if lost or won:
+        return elapsed_time
+    return int(time.monotonic() - start_time)
+
+def drawHUD():
+    hud.clear()
+    y = TILESIZE / 2
+
+    hud.goto(10, y)
+    hud.color("black")
+    hud.write(f"Mines: {mines}\tFlags: {flagcount}",
+              align="left", font=("Arial", 13, "bold"))
+
+    hud.goto(c * TILESIZE / 2, y)
+    hud.color("blue")
+    hud.write("Click to reset", align="center",
+              font=("Arial", 13, "bold"))
+
+    hud.goto(c * TILESIZE * 0.65, y)
+    hud.color("black")
+    hud.write(f"Time: {formatTime(getElapsedTime())}",
+              align="left", font=("Arial", 13, "bold"))
+
+    hud.goto(c * TILESIZE - 10, y)
+    hud.color("black")
+    hud.write(f"Lives left: {lives}", align="right",
+              font=("Arial", 13, "bold"))
+
+    screen.update()
 
 # make the board logic
 def allNeighborCheck(l, i, j):
@@ -147,30 +206,44 @@ screen.register_shape("flagbottom", flagbottomshapecoords)
 screen.register_shape("flagtop", flagtopshapecoords)
 
 def findTileFromPos(x, y):
-    i = int(y / tilesize)
-    j = int(x / tilesize)
+    i = int(y / TILESIZE) - 1
+    j = int(x / TILESIZE)
     return (i, j)
 
 flags = []
+
 def drawFlag(x, y):
-    if game_over:
+    global flagcount
+
+    if lost or won:
         return
+
+    if y < TILESIZE:
+        return
+
     spot = findTileFromPos(x, y)
-    y = spot[0] * tilesize + tilesize / 2
-    x = spot[1] * tilesize + tilesize / 2
+
+    if not (0 <= spot[0] < r and 0 <= spot[1] < c):
+        return
+
+    tilex = spot[1] * TILESIZE + TILESIZE / 2
+    tiley = (spot[0] + 1) * TILESIZE + TILESIZE / 2
+
     if spot in revealed:
         return
+
     if spot in flags:
-        t.goto(x, y)
-        t.shapesize(tilesize / 35)
+        t.goto(tilex, tiley)
+        t.shapesize(TILESIZE / 35)
         t.shape("square")
         t.color("#bdbdbd")
         t.stamp()
-        t.shapesize(tilesize / 20)
+        t.shapesize(TILESIZE / 20)
         flags.remove(spot)
+        flagcount -= 1
     else:
         t.setheading(0)
-        t.goto(x, y)
+        t.goto(tilex, tiley)
         t.color("black")
         t.right(90)
         t.shape("flagbottom")
@@ -181,7 +254,9 @@ def drawFlag(x, y):
         t.right(90)
         t.stamp()
         flags.append(spot)
-        screen.update()
+        flagcount += 1
+
+    drawHUD()
 
 screen.onclick(drawFlag, btn=3)
 
@@ -268,19 +343,20 @@ def revealNeighboringBlanks(i, j):
         revealTile(i + 1, j + 1)
 
 revealed = []
+
 def revealTile(i, j):
     if (i, j) in flags or (i, j) in revealed:
         return
     revealed.append((i, j))
     t.setheading(0)
     t.shape("square")
-    t.shapesize(tilesize / 21)
+    t.shapesize(TILESIZE / 21)
     t.color("#7b7b7b", "#bdbdbd")
-    x = j * tilesize + tilesize / 2
-    y = i * tilesize + tilesize / 2
+    x = j * TILESIZE + TILESIZE / 2
+    y = (i + 1) * TILESIZE + TILESIZE / 2
     t.goto(x, y)
     t.stamp()
-    t.shapesize(tilesize / 20)
+    t.shapesize(TILESIZE / 20)
     tile = board[i][j]
     if tile == "_":
         revealNeighboringBlanks(i, j)
@@ -288,48 +364,91 @@ def revealTile(i, j):
         writeTileValue(i, j)
     screen.update()
 
+# game messages
+message = turtle.Turtle()
+message.hideturtle()
+message.penup()
+
 # making board and clicking logic
 board = None
 
-# Death message
-deathtext = turtle.Turtle()
-deathtext.hideturtle()
-deathtext.penup()
-deathtext.color("red")
+def checkWin():
+    global won, elapsed_time
+
+    if board is None or lost or won:
+        return
+
+    safe_tiles = r * c - mines
+    if sum(1 for i, j in revealed if board[i][j] != "M") == safe_tiles:
+        won = True
+        elapsed_time = getElapsedTime()
+        message.clear()
+        message.goto(c * TILESIZE / 2, (r + 1) * TILESIZE / 2)
+        message.color("green")
+        message.write(
+            f"You Won! :D\nTime: {formatTime(elapsed_time)}",
+            align="center",
+            font=("Arial", 30, "bold")
+        )
+        drawHUD()
+
+def updateTimer(generation):
+    global elapsed_time
+
+    if generation != timer_generation:
+        return
+
+    if start_time is not None and not lost and not won:
+        elapsed_time = int(time.monotonic() - start_time)
+        drawHUD()
+        screen.ontimer(lambda: updateTimer(generation), 1000)
 
 def resetGame():
-    global board, lives, game_over, flags, revealed
+    global board, lives, lost, won, flags, revealed
+    global flagcount, start_time, elapsed_time, timer_generation
+
+    timer_generation += 1
 
     t.clear()
     tilet.clear()
     bg.clear()
-    deathtext.clear()
+    message.clear()
 
     flags = []
     revealed = []
     board = None
-    lives = 1
-    game_over = False
+    lives = LIVES
+    lost = False
+    won = False
+    flagcount = 0
+    start_time = None
+    elapsed_time = 0
 
     # Redraw the background and tiles
     bg.penup()
-    bg.goto(c * tilesize / 2, r * tilesize / 2)
-    drawBevelSquare(tilesize * 20 + 10, bg)
+    bg.goto(c * TILESIZE / 2, (r + 2) * TILESIZE / 2)
+    drawBevelSquare(TILESIZE * 20 + 10, bg)
 
     tilet.penup()
-    tilet.goto(tilesize / 2, tilesize / 2)
+    tilet.goto(TILESIZE / 2, TILESIZE * 1.5)
     for i in range(r):
         for j in range(c):
-            drawBevelSquare(tilesize, tilet)
-            tilet.goto(tilet.xcor() + tilesize, tilet.ycor())
-        tilet.goto(tilesize / 2, tilet.ycor() + tilesize)
+            drawBevelSquare(TILESIZE, tilet)
+            tilet.goto(tilet.xcor() + TILESIZE, tilet.ycor())
+        tilet.goto(TILESIZE / 2, tilet.ycor() + TILESIZE)
 
+    drawHUD()
     screen.update()
 
 def onClick(x, y):
-    global board, lives, game_over
+    global board, lives, lost, won, start_time, elapsed_time
 
-    if game_over:
+    # Clicking the top row resets the game
+    if y < TILESIZE:
+        resetGame()
+        return
+
+    if lost or won:
         return
 
     tilei, tilej = findTileFromPos(x, y)
@@ -337,7 +456,7 @@ def onClick(x, y):
     if not (0 <= tilei < r and 0 <= tilej < c):
         return
 
-    if board == None:
+    if board is None:
         board = makeBoard(tilei, tilej)
         for i in range(r):
             for j in range(c):
@@ -347,19 +466,31 @@ def onClick(x, y):
     if (tilei, tilej) in flags or (tilei, tilej) in revealed:
         return
 
+    if start_time is None:
+        start_time = time.monotonic()
+        generation = timer_generation
+        screen.ontimer(lambda: updateTimer(generation), 1000)
+
     if board[tilei][tilej] == "M":
         lives -= 1
 
     revealTile(tilei, tilej)
 
     if lives == 0:
-        game_over = True
-        deathtext.goto(c * tilesize / 2, r * tilesize / 2)
-        deathtext.write("You Died! :(", align="center",
-                        font=("Arial", 36, "bold"))
-        screen.update()
+        lost = True
+        elapsed_time = getElapsedTime()
+        message.goto(c * TILESIZE / 2, (r + 1) * TILESIZE / 2)
+        message.color("red")
+        message.write("You Died! :(", align="center",
+                      font=("Arial", 36, "bold"))
+        drawHUD()
         screen.ontimer(resetGame, 3000)
+        return
+
+    checkWin()
+    drawHUD()
 
 screen.onscreenclick(onClick)
 
+drawHUD()
 screen.mainloop()
